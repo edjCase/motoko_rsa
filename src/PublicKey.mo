@@ -7,6 +7,7 @@ import ASN1 "mo:asn1";
 import Sha256 "mo:sha2/Sha256";
 import Int "mo:new-base/Int";
 import Text "mo:new-base/Text";
+import Runtime "mo:new-base/Runtime";
 import Signature "./Signature";
 import BaseX "mo:base-x-encoder";
 import PeekableIter "mo:itertools/PeekableIter";
@@ -83,7 +84,7 @@ module {
             signature : Signature.Signature,
         ) : Bool {
             let hashBytes = switch (signature.getHashValue(exponent, modulus)) {
-                case (#err(_)) return false;
+                case (#err(e)) Runtime.trap("Failed to get hash value: " # e);
                 case (#ok(hashBytes)) hashBytes;
             };
             let hashBytesIter = hashBytes.vals();

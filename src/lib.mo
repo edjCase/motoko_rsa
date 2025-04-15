@@ -16,6 +16,11 @@ module {
         encoding : PublicKeyModule.InputByteEncoding,
     ) : Result.Result<PublicKey, Text> = PublicKeyModule.fromBytes(bytes, encoding);
 
+    public func publicKeyFromText(
+        text : Text,
+        encoding : PublicKeyModule.InputTextFormat,
+    ) : Result.Result<PublicKey, Text> = PublicKeyModule.fromText(text, encoding);
+
     public type Signature = SignatureModule.Signature;
 
 };

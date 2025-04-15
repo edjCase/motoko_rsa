@@ -77,65 +77,145 @@ module {
     };
 
     // Helper function to decode PKCS#1 v1.5 signature and extract the hash
-    private func decodePKCS1Signature(bytes : Iter.Iter<Nat8>) : Result.Result<([Nat8], HashAlgorithm), Text> {
-        // Expected format:
-        // 0x00 || 0x01 || PS || 0x00 || T
-        // where PS is a padding string of 0xFF bytes
-        // and T is the DER encoding of the DigestInfo structure
+    private func decodePKCS1Signature(bytesIter : Iter.Iter<Nat8>) : Result.Result<([Nat8], HashAlgorithm), Text> {
+        // Expected format: 0x01 || PS (0xFF...) || 0x00 || DigestInfo (ASN.1 DER)
 
-        // Check magic bytes
-        if (bytes.next() != ?0x00 or bytes.next() != ?0x01) {
-            return #err("Invalid PKCS#1 v1.5 signature format");
-        };
-        // Skip padding bytes (0xFF)
-        while (bytes.next() == ?0xFF)();
-
-        // Check for the separator byte (0x00)
-        if (bytes.next() != ?0x00) {
-            return #err("Invalid PKCS#1 v1.5 padding");
+        // 1. Check the first byte for the block type (0x01)
+        let firstByteOpt = bytesIter.next();
+        switch (firstByteOpt) {
+            case null { return #err("Input byte iterator is empty") };
+            case (?byte) {
+                if (byte != 0x01) {
+                    // Consider using Nat8.toHex or similar for better error message if available
+                    return #err("Invalid PKCS#1 v1.5 signature format: expected 0x01 as the first byte, got 0x" # Nat8.toText(byte));
+                };
+            };
         };
 
-        // Decode the DigestInfo using ASN.1 library
-        let digestInfo = switch (ASN1.decodeDER(bytes)) {
-            case (#err(msg)) return #err("Failed to decode DigestInfo: " # msg);
-            case (#ok(digestInfo)) digestInfo;
+        // 2. Skip padding bytes (0xFF), looking for the 0x00 separator
+        var paddingBytesSkipped : Nat = 0;
+        var foundSeparator = false;
+        label f loop {
+            let nextByteOpt = bytesIter.next();
+            switch (nextByteOpt) {
+                case null {
+                    // Reached end without finding the 0x00 separator
+                    return #err("Invalid PKCS#1 v1.5 padding: reached end of input before 0x00 separator");
+                };
+                case (?byte) {
+                    if (byte == 0xFF) {
+                        paddingBytesSkipped += 1;
+                        // Continue loop to consume next byte
+                    } else if (byte == 0x00) {
+                        // Found the separator
+                        foundSeparator := true;
+                        break f; // Exit loop
+                    } else {
+                        // Found an unexpected byte within the padding area
+                        return #err("Invalid PKCS#1 v1.5 padding: unexpected byte 0x" # Nat8.toText(byte) # " found before 0x00 separator");
+                    };
+                };
+            };
         };
-        // DigestInfo should be a SEQUENCE with:
-        // - digestAlgorithm (SEQUENCE)
-        // - digest (OCTET STRING)
+
+        // Ensure the separator was actually found (loop could theoretically exit otherwise if logic changes)
+        if (not foundSeparator) {
+            // This case should technically be unreachable with the current loop structure, but good practice
+            return #err("Internal error: Loop exited without finding 0x00 separator");
+        };
+
+        // 3. Check minimum padding length
+        // PKCS#1 v1.5 requires at least 8 bytes of padding (0xFF)
+        if (paddingBytesSkipped < 8) {
+            return #err("Invalid PKCS#1 v1.5 padding: less than 8 padding bytes found (" # Nat.toText(paddingBytesSkipped) # ")");
+        };
+
+        // At this point, bytesIter is positioned right after the 0x00 separator,
+        // ready to read the ASN.1 DER encoded DigestInfo.
+
+        // 4. Decode the DigestInfo using ASN.1 library
+        // Pass the *remaining* iterator. ASN1.decodeDER needs to handle potential partial reads
+        // or you might need to collect the rest of the iterator into a Blob/Array first if the decoder requires it.
+        let digestInfoResult = ASN1.decodeDER(bytesIter); // Assuming it decodes from the current iterator state
+
+        let digestInfo = switch (digestInfoResult) {
+            case (#err(msg)) {
+                return #err("Failed to decode DigestInfo: " # msg);
+            };
+            case (#ok(val)) { val }; // `val` should be the decoded ASN.1 structure
+        };
+
+        // Debug.print("DigestInfo: " # debug_show (digestInfo)); // Keep for debugging if needed
+
+        // 5. Parse the DigestInfo structure
+        // DigestInfo ::= SEQUENCE {
+        //    digestAlgorithm AlgorithmIdentifier,
+        //    digest OCTET STRING
+        // }
+        // AlgorithmIdentifier ::= SEQUENCE { algorithm OBJECT IDENTIFIER, parameters ANY DEFINED BY algorithm OPTIONAL }
 
         let #sequence(digestInfoSeq) = digestInfo else {
-            return #err("DigestInfo is not a SEQUENCE");
+            return #err("Decoded DigestInfo is not a SEQUENCE");
         };
 
         if (digestInfoSeq.size() != 2) {
-            return #err("DigestInfo SEQUENCE should have 2 elements");
+            return #err("DigestInfo SEQUENCE should have 2 elements, found " # Nat.toText(digestInfoSeq.size()));
         };
 
-        // Check algorithm identifier
+        // 5a. Parse AlgorithmIdentifier
         let #sequence(algorithmSeq) = digestInfoSeq[0] else {
-            return #err("Algorithm identifier is not a SEQUENCE");
+            return #err("Algorithm identifier (DigestInfo element 0) is not a SEQUENCE");
         };
 
-        if (algorithmSeq.size() < 1) {
-            return #err("Algorithm identifier SEQUENCE is empty");
+        // Must have at least the OID, optionally parameters
+        if (algorithmSeq.size() < 1 or algorithmSeq.size() > 2) {
+            return #err("Algorithm identifier SEQUENCE has invalid size: " # Nat.toText(algorithmSeq.size()));
         };
 
         let #objectIdentifier(algorithmOid) = algorithmSeq[0] else {
-            return #err("Algorithm identifier does not contain an OID");
+            return #err("Algorithm identifier SEQUENCE element 0 is not an OID");
         };
 
-        let algorithm : HashAlgorithm = if (algorithmOid == [2, 16, 840, 1, 101, 3, 4, 2, 1]) {
+        // 5b. Identify the Hash Algorithm from OID
+        let algorithm = if (algorithmOid == [2, 16, 840, 1, 101, 3, 4, 2, 1]) {
+            // Use a helper for robust comparison
             #sha256;
         } else {
-            return #err("Unsupported hash algorithm: " # debug_show (algorithmOid));
+            // Consider a more detailed OID formatting function if available
+            return #err("Unsupported hash algorithm OID: " # debug_show (algorithmOid));
         };
 
-        // Extract the hash
+        // Optional: Check ASN.1 parameters (e.g., SHA family usually uses NULL or omits them)
+        if (algorithmSeq.size() == 2) {
+            switch (algorithmSeq[1]) {
+                case (#null_) (); // NULL parameters are standard for SHA OIDs
+                case (_) return #err("Unexpected parameters for hash algorithm"); // Stricter
+            };
+        };
+
+        // 5c. Extract the Hash Value
         let #octetString(hash) = digestInfoSeq[1] else {
-            return #err("Digest value is not an OCTET STRING");
+            return #err("Digest value (DigestInfo element 1) is not an OCTET STRING");
         };
 
+        // Optional, but recommended: Verify hash length matches algorithm
+        let expectedLen = switch (algorithm) {
+            case (#sha256) { 32 };
+        };
+        if (hash.size() != expectedLen) {
+            return #err(
+                "Extracted hash length (" # Nat.toText(hash.size())
+                # ") does not match expected length (" # Nat.toText(expectedLen)
+                # ") for algorithm " # debug_show (algorithm)
+            );
+        };
+
+        // Optional: Check if the iterator has been fully consumed by the ASN.1 decoder
+        if (bytesIter.next() != null) {
+            return #err("Trailing data found after decoding DigestInfo");
+        };
+
+        // 6. Return success
         return #ok((hash, algorithm));
     };
 
