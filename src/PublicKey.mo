@@ -2,10 +2,16 @@ import Nat "mo:base/Nat";
 import Nat8 "mo:base/Nat8";
 import Iter "mo:base/Iter";
 import Result "mo:base/Result";
+import Buffer "mo:base/Buffer";
 import ASN1 "mo:asn1";
 import Sha256 "mo:sha2/Sha256";
 import Int "mo:new-base/Int";
+import Text "mo:new-base/Text";
 import Signature "./Signature";
+import BaseX "mo:base-x-encoder";
+import PeekableIter "mo:itertools/PeekableIter";
+import IterTools "mo:itertools/Iter";
+import NatX "mo:xtended-numbers/NatX";
 
 module {
     public type HashAlgorithm = Sha256.Algorithm;
@@ -18,6 +24,34 @@ module {
     public type OutputByteEncoding = {
         #spki;
         #pkcs1;
+    };
+
+    public type OutputTextFormat = {
+        #base64 : {
+            byteEncoding : OutputByteEncoding;
+            isUriSafe : Bool;
+        };
+        #hex : {
+            byteEncoding : OutputByteEncoding;
+            format : BaseX.HexOutputFormat;
+        };
+        #pem : {
+            byteEncoding : OutputByteEncoding;
+        };
+        #jwk;
+    };
+
+    public type InputTextFormat = {
+        #base64 : {
+            byteEncoding : InputByteEncoding;
+        };
+        #hex : {
+            byteEncoding : InputByteEncoding;
+            format : BaseX.HexInputFormat;
+        };
+        #pem : {
+            byteEncoding : InputByteEncoding;
+        };
     };
 
     let RSA_OID = [1, 2, 840, 113549, 1, 1, 1];
@@ -84,7 +118,46 @@ module {
                     ASN1.encodeDER(spki);
                 };
             };
+        };
 
+        public func toText(format : OutputTextFormat) : Text {
+            switch (format) {
+                case (#hex(hex)) {
+                    let bytes = toBytes(hex.byteEncoding);
+                    BaseX.toHex(bytes.vals(), hex.format);
+                };
+                case (#base64(base64)) {
+                    let bytes = toBytes(base64.byteEncoding);
+                    BaseX.toBase64(bytes.vals(), base64.isUriSafe);
+                };
+                case (#pem({ byteEncoding })) {
+                    let bytes = toBytes(byteEncoding);
+                    let keyType = switch (byteEncoding) {
+                        case (#spki) ("PUBLIC");
+                        case (#pkcs1) ("RSA PUBLIC");
+                    };
+                    let base64 = BaseX.toBase64(bytes.vals(), false);
+
+                    let iter = PeekableIter.fromIter(base64.chars());
+                    var formatted = Text.fromIter(IterTools.take(iter, 64));
+                    while (iter.peek() != null) {
+                        formatted #= "\n" # Text.fromIter(IterTools.take(iter, 64));
+                    };
+
+                    "-----BEGIN " # keyType # " KEY-----\n" # formatted # "\n-----END " # keyType # " KEY-----\n";
+                };
+                case (#jwk) {
+                    // Convert modulus and exponent to BigEndian byte arrays
+                    let buffer = Buffer.Buffer<Nat8>(256);
+                    NatX.encodeNat(buffer, modulus, #msb);
+                    let nB64 = BaseX.toBase64(buffer.vals(), true);
+                    NatX.encodeNat(buffer, exponent, #msb);
+                    let eB64 = BaseX.toBase64(buffer.vals(), true);
+
+                    // Format as JWK JSON
+                    "{\"kty\":\"RSA\",\"n\":\"" # nB64 # "\",\"e\":\"" # eB64 # "\"}";
+                };
+            };
         };
     };
 
@@ -148,5 +221,66 @@ module {
                 fromBytes(keyData.data.vals(), #pkcs1);
             };
         };
+    };
+
+    public func fromText(value : Text, format : InputTextFormat) : Result.Result<PublicKey, Text> {
+        switch (format) {
+            case (#hex({ format; byteEncoding })) {
+                // Convert hex to bytes
+                switch (BaseX.fromHex(value, format)) {
+                    case (#ok(bytes)) {
+                        switch (fromBytes(bytes.vals(), byteEncoding)) {
+                            case (#ok(key)) #ok(key);
+                            case (#err(e)) #err("Invalid key bytes: " # e);
+                        };
+                    };
+                    case (#err(e)) #err("Invalid hex format: " # e);
+                };
+            };
+
+            case (#base64({ byteEncoding })) {
+                // Convert base64 to bytes
+                switch (BaseX.fromBase64(value)) {
+                    case (#ok(bytes)) {
+                        switch (fromBytes(bytes.vals(), byteEncoding)) {
+                            case (#ok(key)) #ok(key);
+                            case (#err(e)) #err("Invalid key bytes: " # e);
+                        };
+                    };
+                    case (#err(e)) #err("Invalid base64 format: " # e);
+                };
+            };
+
+            case (#pem({ byteEncoding })) {
+                let keyType = switch (byteEncoding) {
+                    case (#spki) "PUBLIC";
+                    case (#pkcs1) "RSA PUBLIC";
+                };
+                // Parse PEM format
+                switch (extractPEMContent(value, keyType)) {
+                    case (#ok(base64Content)) {
+                        switch (BaseX.fromBase64(base64Content)) {
+                            case (#ok(bytes)) {
+                                switch (fromBytes(bytes.vals(), byteEncoding)) {
+                                    case (#ok(key)) #ok(key);
+                                    case (#err(e)) #err("Invalid key bytes: " # e);
+                                };
+                            };
+                            case (#err(e)) #err("Failed to decode PEM base64: " # e);
+                        };
+                    };
+                    case (#err(e)) #err(e);
+                };
+            };
+        };
+    };
+
+    // Helper function to extract content from PEM format for public keys
+    private func extractPEMContent(pem : Text, keyType : Text) : Result.Result<Text, Text> {
+        let header = "-----BEGIN " # keyType # " KEY-----";
+        let ?headerTrimmedPem = Text.stripStart(pem, #text(header)) else return #err("Invalid PEM format: missing header " # header);
+        let footer = "-----END " # keyType # " KEY-----\n";
+        let ?trimmedPem = Text.stripEnd(headerTrimmedPem, #text(footer)) else return #err("Invalid PEM format: missing footer " # footer);
+        #ok(Text.join("", Text.split(trimmedPem, #char('\n'))));
     };
 };
