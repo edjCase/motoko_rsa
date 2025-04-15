@@ -23,4 +23,14 @@ module {
 
     public type Signature = SignatureModule.Signature;
 
+    public func Signature(
+        value : Nat,
+        paddingAlgorithm : SignatureModule.PaddingAlgorithm,
+    ) : Signature = SignatureModule.Signature(value, paddingAlgorithm);
+
+    public func signatureFromBytes(
+        bytes : Iter.Iter<Nat8>,
+        encoding : SignatureModule.InputByteEncoding,
+    ) : Result.Result<Signature, Text> = SignatureModule.fromBytes(bytes, encoding);
+
 };

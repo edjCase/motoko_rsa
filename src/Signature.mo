@@ -11,6 +11,13 @@ module {
     public type OutputByteEncoding = {
         #raw;
     };
+
+    public type InputByteEncoding = {
+        #raw : {
+            paddingAlgorithm : PaddingAlgorithm;
+        };
+    };
+
     public type HashAlgorithm = Sha256.Algorithm;
     public type PaddingAlgorithm = {
         #pkcs1v1_5;
@@ -56,6 +63,18 @@ module {
                 case (#raw) NatX.encodeNat(buffer, value, #msb);
             };
             return Buffer.toArray(buffer);
+        };
+    };
+
+    public func fromBytes(
+        bytes : Iter.Iter<Nat8>,
+        encoding : InputByteEncoding,
+    ) : Result.Result<Signature, Text> {
+        switch (encoding) {
+            case (#raw({ paddingAlgorithm })) {
+                let ?nat = NatX.decodeNat(bytes, #msb) else return #err("Failed to decode signature");
+                #ok(Signature(nat, paddingAlgorithm));
+            };
         };
     };
 
