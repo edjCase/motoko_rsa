@@ -1,12 +1,18 @@
 [dependencies]
-base = "0.11.3"
+base = "0.14.7"
+new-base = "0.4.0"
+base-x-encoder = "0.0.1"
+itertools = "0.2.2"
+asn1 = "2.0.2"
+sha2 = "0.1.0"
+xtended-numbers = "0.4.0"
 
 [package]
-name = ""
+name = "rsa"
 version = "0.0.1"
-description = ""
-repository = "https://github.com/edjcase/"
-keywords = [  ]
+description = "An RSA library"
+repository = "https://github.com/edjcase/motoko_rsa"
+keywords = ["rsa", "cryptography", "encryption"]
 license = "MIT"
 
 [dev-dependencies]
