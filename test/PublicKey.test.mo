@@ -183,7 +183,10 @@ test(
           0x00da5e1e10a1642ec7c502137f3bf50676fe5547fcab7b9acfaa5bdab98ab1478263e1e003ef6a752c0092c62bc027af7d4b74a47e183e5538f22b5b2f7258ec285265d12ade24970473b68806a8b0362a8798ef783ec97056efbb2c381fa38282e911a9bbcc26849ccb10ca95999d0b734ad3b13ecbb53b1e79c4e9e4a7332d3e2d0b35a78e1e87ccfd2d7f2c953ae5d5737b975a23f349e7b5658003d2a67d1f29781ae67c18542a000f0e23d13ba064574aacbcaae2bd369b90ee08e9e9fb634d54cd38859d6068a75e316e739978d4039ef3133e75c3da6ac1b2ca759d1712db3958164baa458fdf6bf51753dd36bc795968acda7531bfbf457d908544c159,
         );
         expectedText = "MIIBCgKCAQEA2l4eEKFkLsfFAhN/O/UGdv5VR/yre5rPqlvauYqxR4Jj4eAD72p1LACSxivAJ699S3Skfhg+VTjyK1svcljsKFJl0SreJJcEc7aIBqiwNiqHmO94PslwVu+7LDgfo4KC6RGpu8wmhJzLEMqVmZ0Lc0rTsT7LtTseecTp5KczLT4tCzWnjh6HzP0tfyyVOuXVc3uXWiPzSee1ZYAD0qZ9Hyl4GuZ8GFQqAA8OI9E7oGRXSqy8quK9NpuQ7gjp6ftjTVTNOIWdYGinXjFuc5l41AOe8xM+dcPaasGyynWdFxLbOVgWS6pFj99r9RdT3Ta8eVlorNp1Mb+/RX2QhUTBWQIDAQAB";
-        textFormat = #base64({ byteEncoding = #pkcs1; isUriSafe = false });
+        textFormat = #base64({
+          byteEncoding = #pkcs1;
+          format = #standard({ includePadding = true });
+        });
         inputTextFormat = ?#base64({ byteEncoding = #pkcs1 });
       },
       {
@@ -193,7 +196,10 @@ test(
           0x00da5e1e10a1642ec7c502137f3bf50676fe5547fcab7b9acfaa5bdab98ab1478263e1e003ef6a752c0092c62bc027af7d4b74a47e183e5538f22b5b2f7258ec285265d12ade24970473b68806a8b0362a8798ef783ec97056efbb2c381fa38282e911a9bbcc26849ccb10ca95999d0b734ad3b13ecbb53b1e79c4e9e4a7332d3e2d0b35a78e1e87ccfd2d7f2c953ae5d5737b975a23f349e7b5658003d2a67d1f29781ae67c18542a000f0e23d13ba064574aacbcaae2bd369b90ee08e9e9fb634d54cd38859d6068a75e316e739978d4039ef3133e75c3da6ac1b2ca759d1712db3958164baa458fdf6bf51753dd36bc795968acda7531bfbf457d908544c159,
         );
         expectedText = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2l4eEKFkLsfFAhN/O/UGdv5VR/yre5rPqlvauYqxR4Jj4eAD72p1LACSxivAJ699S3Skfhg+VTjyK1svcljsKFJl0SreJJcEc7aIBqiwNiqHmO94PslwVu+7LDgfo4KC6RGpu8wmhJzLEMqVmZ0Lc0rTsT7LtTseecTp5KczLT4tCzWnjh6HzP0tfyyVOuXVc3uXWiPzSee1ZYAD0qZ9Hyl4GuZ8GFQqAA8OI9E7oGRXSqy8quK9NpuQ7gjp6ftjTVTNOIWdYGinXjFuc5l41AOe8xM+dcPaasGyynWdFxLbOVgWS6pFj99r9RdT3Ta8eVlorNp1Mb+/RX2QhUTBWQIDAQAB";
-        textFormat = #base64({ byteEncoding = #spki; isUriSafe = false });
+        textFormat = #base64({
+          byteEncoding = #spki;
+          format = #standard({ includePadding = true });
+        });
         inputTextFormat = ?#base64({ byteEncoding = #spki });
       },
       {
@@ -203,7 +209,10 @@ test(
           0x00da5e1e10a1642ec7c502137f3bf50676fe5547fcab7b9acfaa5bdab98ab1478263e1e003ef6a752c0092c62bc027af7d4b74a47e183e5538f22b5b2f7258ec285265d12ade24970473b68806a8b0362a8798ef783ec97056efbb2c381fa38282e911a9bbcc26849ccb10ca95999d0b734ad3b13ecbb53b1e79c4e9e4a7332d3e2d0b35a78e1e87ccfd2d7f2c953ae5d5737b975a23f349e7b5658003d2a67d1f29781ae67c18542a000f0e23d13ba064574aacbcaae2bd369b90ee08e9e9fb634d54cd38859d6068a75e316e739978d4039ef3133e75c3da6ac1b2ca759d1712db3958164baa458fdf6bf51753dd36bc795968acda7531bfbf457d908544c159,
         );
         expectedText = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2l4eEKFkLsfFAhN_O_UGdv5VR_yre5rPqlvauYqxR4Jj4eAD72p1LACSxivAJ699S3Skfhg-VTjyK1svcljsKFJl0SreJJcEc7aIBqiwNiqHmO94PslwVu-7LDgfo4KC6RGpu8wmhJzLEMqVmZ0Lc0rTsT7LtTseecTp5KczLT4tCzWnjh6HzP0tfyyVOuXVc3uXWiPzSee1ZYAD0qZ9Hyl4GuZ8GFQqAA8OI9E7oGRXSqy8quK9NpuQ7gjp6ftjTVTNOIWdYGinXjFuc5l41AOe8xM-dcPaasGyynWdFxLbOVgWS6pFj99r9RdT3Ta8eVlorNp1Mb-_RX2QhUTBWQIDAQAB";
-        textFormat = #base64({ byteEncoding = #spki; isUriSafe = true });
+        textFormat = #base64({
+          byteEncoding = #spki;
+          format = #url({ includePadding = false });
+        });
         // Assuming fromText implicitly handles standard/uri-safe, otherwise needs specific inputTextFormat or skip deserialization
         inputTextFormat = ?#base64({ byteEncoding = #spki }); // Check if fromText needs uriSafe info
       },
@@ -289,7 +298,10 @@ WQIDAQAB
           0x008a217e244c487ac9ba67b5b87902fb75c576692dd6482ae58b39dd6e8ef1106ab0344eb0b0d27333bc842429332bda644cf0778c5ce8ecded5e3db5dd3664b9926aaec01ce13eff5a933a306e786ef2e717bc9ba2b2a5b0b1a3ad306c5df745b4f3bf1027b03b667638f86f198861f60257c708f600bb7a3feae929cff042d66cf5f3e052183dffa3a8af0df991c7f0fabeda4fde327d0c77aed8e90ebe0f09aa5dbcc06ee58a9142fe5ca49d420a28e3b0c46381f4b0ac808fa8a07c49d0b5ffff0a73ecb6721755c855bf87d76dfd468e7a2b9f8ae77619e9bcbff5e9f5a38870b294be1a182dc3c75ccf5416bf13015c9586b47b0f986a6384c3a8912e149,
         );
         expectedText = "MIIBCgKCAQEAiiF+JExIesm6Z7W4eQL7dcV2aS3WSCrlizndbo7xEGqwNE6wsNJzM7yEJCkzK9pkTPB3jFzo7N7V49td02ZLmSaq7AHOE+/1qTOjBueG7y5xe8m6KypbCxo60wbF33RbTzvxAnsDtmdjj4bxmIYfYCV8cI9gC7ej/q6SnP8ELWbPXz4FIYPf+jqK8N+ZHH8Pq+2k/eMn0Md67Y6Q6+DwmqXbzAbuWKkUL+XKSdQgoo47DEY4H0sKyAj6igfEnQtf//CnPstnIXVchVv4fXbf1Gjnorn4rndhnpvL/16fWjiHCylL4aGC3Dx1zPVBa/EwFclYa0ew+YamOEw6iRLhSQIDAQAB";
-        textFormat = #base64({ byteEncoding = #pkcs1; isUriSafe = false });
+        textFormat = #base64({
+          byteEncoding = #pkcs1;
+          format = #standard({ includePadding = true });
+        });
         inputTextFormat = ?#base64({ byteEncoding = #pkcs1 });
       },
       {
@@ -299,7 +311,10 @@ WQIDAQAB
           0x008a217e244c487ac9ba67b5b87902fb75c576692dd6482ae58b39dd6e8ef1106ab0344eb0b0d27333bc842429332bda644cf0778c5ce8ecded5e3db5dd3664b9926aaec01ce13eff5a933a306e786ef2e717bc9ba2b2a5b0b1a3ad306c5df745b4f3bf1027b03b667638f86f198861f60257c708f600bb7a3feae929cff042d66cf5f3e052183dffa3a8af0df991c7f0fabeda4fde327d0c77aed8e90ebe0f09aa5dbcc06ee58a9142fe5ca49d420a28e3b0c46381f4b0ac808fa8a07c49d0b5ffff0a73ecb6721755c855bf87d76dfd468e7a2b9f8ae77619e9bcbff5e9f5a38870b294be1a182dc3c75ccf5416bf13015c9586b47b0f986a6384c3a8912e149,
         );
         expectedText = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiiF+JExIesm6Z7W4eQL7dcV2aS3WSCrlizndbo7xEGqwNE6wsNJzM7yEJCkzK9pkTPB3jFzo7N7V49td02ZLmSaq7AHOE+/1qTOjBueG7y5xe8m6KypbCxo60wbF33RbTzvxAnsDtmdjj4bxmIYfYCV8cI9gC7ej/q6SnP8ELWbPXz4FIYPf+jqK8N+ZHH8Pq+2k/eMn0Md67Y6Q6+DwmqXbzAbuWKkUL+XKSdQgoo47DEY4H0sKyAj6igfEnQtf//CnPstnIXVchVv4fXbf1Gjnorn4rndhnpvL/16fWjiHCylL4aGC3Dx1zPVBa/EwFclYa0ew+YamOEw6iRLhSQIDAQAB";
-        textFormat = #base64({ byteEncoding = #spki; isUriSafe = false });
+        textFormat = #base64({
+          byteEncoding = #spki;
+          format = #standard({ includePadding = true });
+        });
         inputTextFormat = ?#base64({ byteEncoding = #spki });
       },
       {

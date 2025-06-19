@@ -111,7 +111,7 @@ let hexKey = publicKey.toText(#hex({
 // Export to base64 format (SPKI)
 let base64Key = publicKey.toText(#base64({
   byteEncoding = #spki;
-  isUriSafe = false;
+  format = #standard({ includePadding = true });
 }));
 
 // Export to JWK format
@@ -173,7 +173,7 @@ public type InputTextFormat = {
 
 // Output text formats for keys
 public type OutputTextFormat = {
-    #base64 : { byteEncoding : OutputByteEncoding; isUriSafe : Bool };
+    #base64 : { byteEncoding : OutputByteEncoding; format : BaseX.Base64OutputFormat };
     #hex : { byteEncoding : OutputByteEncoding; format : BaseX.HexOutputFormat };
     #pem : { byteEncoding : OutputByteEncoding };
     #jwk;  // JSON Web Key format

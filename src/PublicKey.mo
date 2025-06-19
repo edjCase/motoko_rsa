@@ -30,7 +30,7 @@ module {
     public type OutputTextFormat = {
         #base64 : {
             byteEncoding : OutputByteEncoding;
-            isUriSafe : Bool;
+            format : BaseX.Base64OutputFormat;
         };
         #hex : {
             byteEncoding : OutputByteEncoding;
@@ -129,7 +129,7 @@ module {
                 };
                 case (#base64(base64)) {
                     let bytes = toBytes(base64.byteEncoding);
-                    BaseX.toBase64(bytes.vals(), base64.isUriSafe);
+                    BaseX.toBase64(bytes.vals(), base64.format);
                 };
                 case (#pem({ byteEncoding })) {
                     let bytes = toBytes(byteEncoding);
@@ -137,7 +137,7 @@ module {
                         case (#spki) ("PUBLIC");
                         case (#pkcs1) ("RSA PUBLIC");
                     };
-                    let base64 = BaseX.toBase64(bytes.vals(), false);
+                    let base64 = BaseX.toBase64(bytes.vals(), #standard({ includePadding = true }));
 
                     let iter = PeekableIter.fromIter(base64.chars());
                     var formatted = Text.fromIter(IterTools.take(iter, 64));
@@ -151,9 +151,9 @@ module {
                     // Convert modulus and exponent to BigEndian byte arrays
                     let buffer = Buffer.Buffer<Nat8>(256);
                     NatX.encodeNat(buffer, modulus, #msb);
-                    let nB64 = BaseX.toBase64(buffer.vals(), true);
+                    let nB64 = BaseX.toBase64(buffer.vals(), #url({ includePadding = false }));
                     NatX.encodeNat(buffer, exponent, #msb);
-                    let eB64 = BaseX.toBase64(buffer.vals(), true);
+                    let eB64 = BaseX.toBase64(buffer.vals(), #url({ includePadding = false }));
 
                     // Format as JWK JSON
                     "{\"kty\":\"RSA\",\"n\":\"" # nB64 # "\",\"e\":\"" # eB64 # "\"}";
