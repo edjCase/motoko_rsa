@@ -11,10 +11,7 @@ module {
 
   public func init() : Bench.Bench {
 
-    // Different message sizes for performance comparison
     let message : Blob = "\48\65\6c\6c\6f\2c\20\77\6f\72\6c\64\21"; // "Hello, world!"
-    // RSA signatures for the three messages (created using Nat values)
-    // Small message signature (SHA256 + PKCS#1 v1.5 padding) for "Hello"
 
     let testPublicKey = RSA.PublicKey(
       0x10001,
