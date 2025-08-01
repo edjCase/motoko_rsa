@@ -24,7 +24,7 @@ To set up the MOPS package manager, follow the instructions from the
 
 ```motoko
 import RSA "mo:rsa";
-import Iter "mo:base/Iter";
+import Iter "mo:core/Iter";
 import Sha256 "mo:sha2/Sha256";
 
 // Message to verify
@@ -200,10 +200,10 @@ The RSA library focuses on RSA cryptography rather than elliptic curve cryptogra
 
 This library depends on:
 
-- `mo:base/Iter`
-- `mo:base/Nat`
-- `mo:base/Nat8`
-- `mo:new-base/Result`
+- `mo:core/Iter`
+- `mo:core/Nat`
+- `mo:core/Nat8`
+- `mo:core/Result`
 - `mo:sha2`
 - `mo:asn1`
 - `mo:base-x-encoder`

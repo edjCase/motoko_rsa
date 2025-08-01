@@ -1,23 +1,30 @@
 [package]
 name = "rsa"
-version = "1.0.1"
+version = "2.0.0"
 description = "An RSA library"
 repository = "https://github.com/edjcase/motoko_rsa"
-keywords = ["rsa", "cryptography", "encryption", "key", "private", "public"]
+keywords = [
+  "rsa",
+  "cryptography",
+  "encryption",
+  "key",
+  "private",
+  "public"
+]
 license = "MIT"
 
 [dependencies]
-base = "0.14.13"
-new-base = "0.4.0"
-base-x-encoder = "1.1.0"
+core = "0.6.0"
+base-x-encoder = "1.2.0"
 itertools = "0.2.2"
-asn1 = "2.0.2"
-sha2 = "0.1.4"
-xtended-numbers = "0.4.0"
+asn1 = "3.0.0"
+sha2 = "0.1.6"
+xtended-numbers = "2.0.0"
+buffer = "0.0.1"
 
 [dev-dependencies]
 test = "2.1.1"
 bench = "1.0.0"
 
 [toolchain]
-moc = "0.14.10"
+moc = "0.14.14"
